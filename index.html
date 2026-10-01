@@ -76,7 +76,7 @@ form{display:grid;gap:12px}
  <div style="display:grid;gap:6px;min-width:180px"><label class="lbl" for="mf">เลือกเดือน</label><input id="mf" class="field" type="month"></div>
 </header>
 <div class="tools"><button class="btn ghost" id="xCsv" type="button">ส่งออก CSV</button><button class="btn ghost" id="xJson" type="button">สำรองข้อมูล (JSON)</button><button class="btn ghost" id="iBtn" type="button">นำเข้าข้อมูล</button><input id="iFile" type="file" accept=".json,application/json" class="hidden"><p id="tn" class="note" role="status"></p></div>
-<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">ซิงค์กับ Google Sheets (Apps Script)</summary>
+<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">ซิงค์กับ Google Sheets (Apps Script) <span id="sb2" class="note" style="margin-left:8px;font-weight:600"></span></summary>
  <form id="sf" style="margin-top:14px"><div class="fg"><div class="wide"><label class="lbl" for="su">Web App URL</label><input id="su" class="field" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide"><label class="lbl" for="sk">รหัสลับ (TOKEN ที่ตั้งใน Code.gs)</label><input id="sk" class="field" type="password" autocomplete="off"></div></div>
  <div class="tools" style="margin-top:0"><button class="btn" type="submit">เชื่อมต่อและซิงค์</button><button class="btn ghost" id="sn" type="button">ซิงค์ตอนนี้</button><button class="btn ghost" id="sd" type="button">ยกเลิกการเชื่อมต่อ</button></div>
  <p id="ss" class="note" role="status">ยังไม่ได้เชื่อมต่อ ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น</p></form></details>
@@ -257,11 +257,11 @@ function initTools(){
   rd.readAsText(f)};
 }
 
-function syncSt(t,err){$("ss").textContent=t;$("ss").style.color=err?"var(--coral)":"var(--muted)"}
+function syncSt(t,err){$("ss").textContent=t;$("ss").style.color=err?"var(--coral)":"var(--muted)";const b=$("sb2");b.textContent=err?"⚠ ซิงค์ไม่สำเร็จ":(conf.url?"✓ "+(t.length>24?"เชื่อมต่อแล้ว":t):"");b.style.color=err?"var(--coral)":"var(--forest)";if(err)$("sf").closest("details").open=true}
 function clean(x){const a=Number(x&&x.amount);if(!x||!["income","expense"].includes(x.type)||!(a>0)||!/^\d{4}-\d{2}-\d{2}$/.test(x.date||""))return null;
  return{id:String(x.id),type:x.type,category:String(x.category||"อื่น ๆ").slice(0,40),amount:a,note:String(x.note||"").slice(0,80),date:x.date,month_key:x.date.slice(0,7)}}
 async function post(o){const res=await fetch(conf.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...o,token:conf.token||""})});
- const d=await res.json();if(!d.ok)throw new Error(d.error||"ไม่ทราบสาเหตุ");return d}
+ let d;try{d=await res.json()}catch{throw new Error("Apps Script ตอบกลับไม่ใช่ JSON (ตรวจว่า Deploy เวอร์ชันล่าสุด ตั้ง Anyone และเปิดจาก URL ที่ลงท้าย /exec)")}if(!d.ok)throw new Error(d.error||"ไม่ทราบสาเหตุ");return d}
 function op(o){if(!conf.url)return;queue.push(o);save("sync-queue",queue);flush()}
 async function flush(){if(flushing||!conf.url)return;flushing=true;
  try{while(queue.length){await post(queue[0]);queue.shift();save("sync-queue",queue)}syncSt("ซิงค์แล้ว")}
