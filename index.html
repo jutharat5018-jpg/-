@@ -67,6 +67,7 @@ form{display:grid;gap:12px}
 .btn.ghost{background:transparent;color:var(--forest);border:1px solid var(--line);min-height:40px;padding:8px 14px}
 .flt{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-bottom:14px}
 @media(max-width:760px){.flt{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:99px;font-size:.82rem}.chip button{border:0;background:none;color:var(--muted);padding:0;font-size:1rem;line-height:1}
 </style>
 </head>
 <body>
@@ -80,6 +81,16 @@ form{display:grid;gap:12px}
  <form id="sf" style="margin-top:14px"><div class="fg"><div class="wide"><label class="lbl" for="su">Web App URL</label><input id="su" class="field" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide"><label class="lbl" for="sk">รหัสลับ (TOKEN ที่ตั้งใน Code.gs)</label><input id="sk" class="field" type="password" autocomplete="off"></div></div>
  <div class="tools" style="margin-top:0"><button class="btn" type="submit">เชื่อมต่อและซิงค์</button><button class="btn ghost" id="sn" type="button">ซิงค์ตอนนี้</button><button class="btn ghost" id="sd" type="button">ยกเลิกการเชื่อมต่อ</button></div>
  <p id="ss" class="note" role="status">ยังไม่ได้เชื่อมต่อ ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น</p></form></details>
+<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">ตั้งค่าใช้จ่าย (หมวดหมู่ งบต่อหมวด รายการประจำ)</summary>
+ <div style="display:grid;gap:26px;margin-top:16px">
+  <div><h3>หมวดหมู่</h3><p class="cap">เพิ่มหรือลบหมวดได้ รายการเก่าที่ใช้หมวดที่ลบไปยังอยู่ครบ</p>
+   <div class="fg"><div><span class="lbl">รายจ่าย</span><div id="ceL" class="chips"></div><form id="ceF" class="bf" style="margin:0"><input id="ceI" class="field" maxlength="24" placeholder="เช่น ค่าน้ำมัน" aria-label="หมวดรายจ่ายใหม่"><button class="btn ghost" type="submit">เพิ่ม</button></form></div>
+   <div><span class="lbl">รายรับ</span><div id="ciL" class="chips"></div><form id="ciF" class="bf" style="margin:0"><input id="ciI" class="field" maxlength="24" placeholder="เช่น ค่าคอมมิชชัน" aria-label="หมวดรายรับใหม่"><button class="btn ghost" type="submit">เพิ่ม</button></form></div></div></div>
+  <div><h3>งบต่อหมวด (ต่อเดือน)</h3><p class="cap">เว้นว่างถ้าไม่จำกัด ใช้กับทุกเดือน แสดงผลในส่วน "รายละเอียดตามหมวด" และเป็นสีแดงเมื่อเกินงบ</p><div id="cbL" class="fg"></div></div>
+  <div><h3>รายการประจำ</h3><p class="cap">เพิ่มให้อัตโนมัติทุกเดือนตามวันที่กำหนด เช่น ค่าเช่า ค่าอินเทอร์เน็ต เงินเดือน</p>
+   <form id="rF"><div class="fg"><div><label class="lbl" for="rt">ประเภท</label><select id="rt" class="field"><option value="expense">รายจ่าย</option><option value="income">รายรับ</option></select></div><div><label class="lbl" for="rk">หมวดหมู่</label><select id="rk" class="field"></select></div><div><label class="lbl" for="ra">จำนวนเงิน (บาท)</label><input id="ra" class="field" type="number" min="0.01" step="0.01" inputmode="decimal" required></div><div><label class="lbl" for="rd">วันที่ของเดือน</label><input id="rd" class="field" type="number" min="1" max="31" value="1" required></div><div class="wide"><label class="lbl" for="rn">บันทึก</label><input id="rn" class="field" type="text" maxlength="80" placeholder="เช่น ค่าเช่าห้อง"></div></div><button class="btn" type="submit">เพิ่มรายการประจำ</button></form>
+   <div id="rL" style="margin-top:12px"></div></div>
+ </div></details>
 <main>
 <section class="grid3">
  <div class="sum"><span>รายรับ</span><p id="inT">฿0.00</p></div>
@@ -138,14 +149,15 @@ form{display:grid;gap:12px}
 <script>
 const KEY="budget-records",BKEY="monthly-budget-targets";
 const pal=["#315c4d","#d96c53","#bb7923","#7b6a9d","#5483a5","#8c9f63","#b0617b"];
-const cats={expense:["อาหาร","เดินทาง","ที่อยู่อาศัย","บิลและบริการ","ช้อปปิ้ง","สุขภาพ","อื่น ๆ"],income:["เงินเดือน","รายได้เสริม","อื่น ๆ"]};
+const defCats={expense:["อาหาร","เดินทาง","ที่อยู่อาศัย","บิลและบริการ","ช้อปปิ้ง","สุขภาพ","อื่น ๆ"],income:["เงินเดือน","รายได้เสริม","อื่น ๆ"]};
+let cats=(c=>c&&Array.isArray(c.expense)&&Array.isArray(c.income)&&c.expense.length&&c.income.length?c:JSON.parse(JSON.stringify(defCats)))(load("cats",null));
 const $=id=>document.getElementById(id);
 const thb=new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",minimumFractionDigits:2});
 const thb0=new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0});
 const dfmt=new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"});
 function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch{return d}}
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-let records=load(KEY,[]),budgets=load(BKEY,{}),month="",pending=null,editing=null,conf=load("sync-config",{}),queue=load("sync-queue",[]),flushing=false;
+let records=load(KEY,[]),budgets=load(BKEY,{}),month="",pending=null,editing=null,conf=load("sync-config",{}),queue=load("sync-queue",[]),flushing=false,cb=load("cat-budgets",{}),rcr=load("recurring",[]),rgen=load("rgen",[]);
 function today(){const n=new Date();return new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 function prevKey(k){const[y,m]=k.split("-").map(Number);const d=new Date(y,m-2,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
 function totals(r){return r.reduce((t,x)=>(t[x.type==="income"?"income":"expense"]+=Number(x.amount)||0,t),{income:0,expense:0})}
@@ -153,7 +165,7 @@ function cmp(c,p){if(!c&&!p)return"ไม่มีรายการในเด
 function group(r,type){const m={};r.filter(x=>x.type===type).forEach(x=>m[x.category]=(m[x.category]||0)+Number(x.amount));return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function item(color,name,val){const d=document.createElement("div");d.className="ci";const i=document.createElement("i");i.style.background=color;const n=document.createElement("span");n.textContent=name;const b=document.createElement("b");b.textContent=val;d.append(i,n,b);return d}
 function emptyP(t){const p=document.createElement("p");p.className="empty";p.textContent=t;return p}
-function fillList(el,data,type,fmt){el.replaceChildren();if(!data.length){el.append(emptyP(type==="income"?"ยังไม่มีรายรับในเดือนนี้":"ยังไม่มีรายจ่ายในเดือนนี้"));return}data.forEach(([n,a],i)=>el.append(item(type==="income"?pal[0]:pal[i%pal.length],n,fmt(a))))}
+function fillList(el,data,type,fmt){el.replaceChildren();if(!data.length){el.append(emptyP(type==="income"?"ยังไม่มีรายรับในเดือนนี้":"ยังไม่มีรายจ่ายในเดือนนี้"));return}data.forEach(([n,a],i)=>{const lim=type==="expense"?Number(cb[n])||0:0,d=item(type==="income"?pal[0]:pal[i%pal.length],n,fmt(a)+(lim?" / "+thb0.format(lim):""));if(lim&&a>lim)d.querySelector("b").style.color="var(--coral)";el.append(d)})}
 function render(){
  const cur=records.filter(r=>r.month_key===month),prv=records.filter(r=>r.month_key===prevKey(month));
  const c=totals(cur),p=totals(prv),bal=c.income-c.expense;
@@ -222,10 +234,10 @@ $("tf").onsubmit=e=>{e.preventDefault();
 };
 $("bf").onsubmit=e=>{e.preventDefault();const v=Number($("bi").value);if(v>0)budgets[month]=v;else delete budgets[month];save(BKEY,budgets);op({action:"budget",month,amount:v>0?v:0});render()};
 $("mf").onchange=()=>{if(!$("mf").value)return;month=$("mf").value;pending=null;render()};
-month=today().slice(0,7);$("mf").value=month;$("da").value=today();setCats();initTools();initSync();render();
+month=today().slice(0,7);$("mf").value=month;$("da").value=today();setCats();initTools();buildFc();genRecurring();initSync();initSettings();render();
 
 function budgetMonth(m){if(budgets[m])return m;const k=Object.keys(budgets).filter(x=>x<m&&Number(budgets[x])>0).sort();return k.length?k[k.length-1]:""}
-function startEdit(r){editing=r.id;$("ty").value=r.type;setCats();$("ca").value=r.category;$("am").value=r.amount;$("da").value=r.date;$("no").value=r.note||"";
+function startEdit(r){editing=r.id;$("ty").value=r.type;setCats();if(![...$("ca").options].some(o=>o.value===r.category)){const o=document.createElement("option");o.value=o.textContent=r.category;$("ca").append(o)}$("ca").value=r.category;$("am").value=r.amount;$("da").value=r.date;$("no").value=r.note||"";
  $("fh").textContent="แก้ไขรายการ";$("sb").textContent="อัปเดตรายการ";$("cx").classList.remove("hidden");status("");$("tf").scrollIntoView({behavior:"smooth",block:"center"})}
 function endEdit(){editing=null;$("fh").textContent="เพิ่มรายการ";$("sb").textContent="บันทึกรายการ";$("cx").classList.add("hidden");$("am").value="";$("no").value="";$("da").value=today()}
 function tnote(t,err){$("tn").textContent=t;$("tn").style.color=err?"var(--coral)":"var(--muted)"}
@@ -271,7 +283,7 @@ async function pull(){if(!conf.url)return;syncSt("กำลังซิงค์
  try{const d=await post({action:"list"});if(queue.length)return;
   records=(d.records||[]).map(clean).filter(Boolean);budgets={};
   Object.entries(d.budgets||{}).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&Number(v)>0)budgets[k]=Number(v)});
-  save(KEY,records);save(BKEY,budgets);render();syncSt("ซิงค์แล้ว มี "+records.length+" รายการ")}
+  save(KEY,records);save(BKEY,budgets);buildFc();render();syncSt("ซิงค์แล้ว มี "+records.length+" รายการ")}
  catch(e){syncSt("ดึงข้อมูลไม่สำเร็จ: "+e.message,true)}}
 function initSync(){
   const h=new URLSearchParams(location.hash.slice(1)),hu=h.get("u"),hk=h.get("k");
@@ -293,6 +305,37 @@ function initSync(){
  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&conf.url)pull()});
  if(conf.url)pull();
 }
+
+function buildFc(){const set=new Set(["",...cats.expense,...cats.income,...records.map(x=>x.category)]),cur=$("fc").value;
+ $("fc").replaceChildren(...[...set].map(c=>{const o=document.createElement("option");o.value=c;o.textContent=c||"ทุกหมวด";return o}));$("fc").value=cur}
+function genRecurring(){const n=new Date(),y=n.getFullYear(),m=n.getMonth(),last=new Date(y,m+1,0).getDate(),mk=y+"-"+String(m+1).padStart(2,"0");let ch=false;
+ rcr.forEach(x=>{const d=Math.min(x.day,last);if(d>n.getDate())return;const id="rc-"+x.id+"-"+mk;if(rgen.includes(id)||records.some(q=>q.id===id))return;
+  const rec={id,type:x.type,category:x.category,amount:x.amount,note:x.note||"",date:mk+"-"+String(d).padStart(2,"0"),month_key:mk};
+  records.push(rec);rgen.push(id);ch=true;op({action:"upsert",record:rec})});
+ if(ch){save(KEY,records);save("rgen",rgen.slice(-500))}}
+function chipList(el,type){el.replaceChildren(...cats[type].map(c=>{const s=document.createElement("span");s.className="chip";s.append(c);
+ const b=document.createElement("button");b.type="button";b.textContent="×";b.setAttribute("aria-label","ลบหมวด "+c);
+ b.onclick=()=>{cats[type]=cats[type].filter(x=>x!==c);if(!cats[type].length)cats[type]=["อื่น ๆ"];save("cats",cats);afterCats()};s.append(b);return s}))}
+function afterCats(){setCats();buildFc();renderSettings();render()}
+function renderSettings(){
+ chipList($("ceL"),"expense");chipList($("ciL"),"income");
+ $("cbL").replaceChildren(...cats.expense.map(c=>{const w=document.createElement("div"),l=document.createElement("label"),i=document.createElement("input");
+  l.className="lbl";l.textContent=c;i.className="field";i.type="number";i.min="0";i.step="100";i.inputMode="decimal";i.placeholder="ไม่จำกัด";i.value=cb[c]||"";
+  i.onchange=()=>{const v=Number(i.value);if(v>0)cb[c]=v;else delete cb[c];save("cat-budgets",cb);render()};w.append(l,i);return w}));
+ const keep=$("rk").value;$("rk").replaceChildren(...cats[$("rt").value].map(c=>{const o=document.createElement("option");o.value=o.textContent=c;return o}));if(keep)$("rk").value=keep;
+ $("rL").replaceChildren(...(rcr.length?rcr.map(x=>{const d=document.createElement("div"),t=document.createElement("div"),sd=document.createElement("div"),a=document.createElement("span"),b=document.createElement("button");
+  d.className="ent";d.style.gridTemplateColumns="1fr auto";t.textContent="ทุกวันที่ "+x.day+" · "+x.category+(x.note?" · "+x.note:"");
+  sd.className="side";a.textContent=(x.type==="income"?"+":"−")+thb.format(x.amount);a.style.color=x.type==="income"?"var(--forest)":"var(--coral)";
+  b.className="del";b.type="button";b.textContent="ลบ";b.onclick=()=>{rcr=rcr.filter(y=>y.id!==x.id);save("recurring",rcr);renderSettings()};
+  sd.append(a,b);d.append(t,sd);return d}):[emptyP("ยังไม่มีรายการประจำ")]))}
+function initSettings(){
+ [["ce","expense"],["ci","income"]].forEach(([p,t])=>$(p+"F").onsubmit=e=>{e.preventDefault();const v=$(p+"I").value.trim().slice(0,24);if(!v||cats[t].includes(v))return;cats[t].push(v);$(p+"I").value="";save("cats",cats);afterCats()});
+ $("rt").onchange=()=>{$("rk").value="";renderSettings()};
+ $("rF").onsubmit=e=>{e.preventDefault();const a=Number($("ra").value),day=Math.min(31,Math.max(1,Math.floor(Number($("rd").value))||1));if(!(a>0))return;
+  rcr.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),type:$("rt").value,category:$("rk").value,amount:a,day,note:$("rn").value.trim().slice(0,80)});
+  save("recurring",rcr);$("ra").value=$("rn").value="";genRecurring();renderSettings();render()};
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden){genRecurring();render()}});
+ renderSettings()}
 </script>
 </body>
 </html>
