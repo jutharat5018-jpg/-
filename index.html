@@ -278,15 +278,18 @@ function initSync(){
  if(hu&&hk&&/^https:\/\/script\.google(usercontent)?\.com\//.test(hu)){conf={url:hu,token:hk};save("sync-config",conf);
   if(records.length||Object.keys(budgets).length){queue.push({action:"bulk",records,budgets});save("sync-queue",queue)}
   history.replaceState(null,"",location.pathname+location.search)}
+ const DEF={url:"https://script.google.com/macros/s/AKfycbwKJ-Uv0sEojexMYQujTA5ma0KUvW2DgkmLein288atpWteWtCnlRDyBNkknTkh6L9E/exec",token:"c4c783e37a7773c5"};
+ if(!load("sync-optout",0)&&(conf.url!==DEF.url||conf.token!==DEF.token)){conf={...DEF};save("sync-config",conf);
+  if(records.length||Object.keys(budgets).length){queue.push({action:"bulk",records,budgets});save("sync-queue",queue)}}
  $("su").value=conf.url||"";$("sk").value=conf.token||"";
  if(conf.url)syncSt("เชื่อมต่อกับ Google Sheets แล้ว");
  $("sf").onsubmit=e=>{e.preventDefault();const u=$("su").value.trim();
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){syncSt("URL ต้องขึ้นต้นด้วย https://script.google.com/",true);return}
-  conf={url:u,token:$("sk").value};save("sync-config",conf);
+  conf={url:u,token:$("sk").value};save("sync-config",conf);save("sync-optout",0);
   if(records.length||Object.keys(budgets).length){queue.push({action:"bulk",records,budgets});save("sync-queue",queue)}
   pull()};
  $("sn").onclick=pull;
- $("sd").onclick=()=>{conf={};queue=[];save("sync-config",conf);save("sync-queue",queue);$("su").value=$("sk").value="";syncSt("ยกเลิกการเชื่อมต่อแล้ว ข้อมูลในเครื่องยังอยู่")};
+ $("sd").onclick=()=>{conf={};queue=[];save("sync-optout",1);save("sync-config",conf);save("sync-queue",queue);$("su").value=$("sk").value="";syncSt("ยกเลิกการเชื่อมต่อแล้ว ข้อมูลในเครื่องยังอยู่")};
  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&conf.url)pull()});
  if(conf.url)pull();
 }
