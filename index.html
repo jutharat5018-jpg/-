@@ -24,7 +24,7 @@ button,input,select{font:inherit}button{cursor:pointer}
 .sum{padding:20px;background:var(--card);border:1px solid var(--line);border-radius:16px}
 .sum span{font-size:.85rem;font-weight:600;color:var(--muted)}
 .sum p{margin-top:18px;font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;letter-spacing:-.04em}
-.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:18px;align-items:start}
+.cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:18px;align-items:stretch}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
 .panel{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:16px}
 .panel h2,.panel h3{margin-bottom:4px}
@@ -37,7 +37,7 @@ button,input,select{font:inherit}button{cursor:pointer}
 form{display:grid;gap:12px}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg>div{display:grid;gap:6px}.wide{grid-column:1/-1}
-.btn{min-height:46px;padding:10px 16px;border:0;border-radius:10px;background:var(--forest);color:#fff;font-weight:600}
+.btn{min-height:44px;padding:10px 16px;border:0;border-radius:10px;background:var(--forest);color:#fff;font-weight:600}
 .btn:hover{filter:brightness(.92)}
 .bf{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:16px}
 .bf>div{display:grid;gap:6px}
@@ -64,10 +64,12 @@ form{display:grid;gap:12px}
 @media(max-width:760px){.top{flex-direction:column;align-items:stretch}.grid3,.cols,.two,.fg{grid-template-columns:1fr}.wide{grid-column:auto}}
 @media(max-width:430px){.donut,.bf{grid-template-columns:1fr}.ring{margin:0 auto}}
 .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:18px}.tools .note{flex-basis:100%}
-.btn.ghost{background:transparent;color:var(--forest);border:1px solid var(--line);min-height:40px;padding:8px 14px}
+.btn.ghost{background:transparent;color:var(--forest);border:1px solid var(--line);min-height:44px;padding:8px 14px}
 .flt{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;margin-bottom:14px}
 @media(max-width:760px){.flt{grid-template-columns:1fr}}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px}.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:99px;font-size:.82rem}.chip button{border:0;background:none;color:var(--muted);padding:0;font-size:1rem;line-height:1}
+.cbf{grid-template-columns:1fr 1fr auto;align-items:end}.cbf>div{display:grid;gap:6px}@media(max-width:760px){.cbf{grid-template-columns:1fr}}
+.cols>.panel,.two>.panel{height:100%}
 </style>
 </head>
 <body>
@@ -81,7 +83,7 @@ form{display:grid;gap:12px}
  <form id="sf" style="margin-top:14px"><div class="fg"><div class="wide"><label class="lbl" for="su">Web App URL</label><input id="su" class="field" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div><div class="wide"><label class="lbl" for="sk">รหัสลับ (TOKEN ที่ตั้งใน Code.gs)</label><input id="sk" class="field" type="password" autocomplete="off"></div></div>
  <div class="tools" style="margin-top:0"><button class="btn" type="submit">เชื่อมต่อและซิงค์</button><button class="btn ghost" id="sn" type="button">ซิงค์ตอนนี้</button><button class="btn ghost" id="sd" type="button">ยกเลิกการเชื่อมต่อ</button></div>
  <p id="ss" class="note" role="status">ยังไม่ได้เชื่อมต่อ ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น</p></form></details>
-<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">ตั้งค่าใช้จ่าย (หมวดหมู่ งบต่อหมวด รายการประจำ)</summary>
+<details id="setd" class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">ตั้งค่าใช้จ่าย (หมวดหมู่ งบต่อหมวด รายการประจำ)</summary>
  <div style="display:grid;gap:26px;margin-top:16px">
   <div><h3>หมวดหมู่</h3><p class="cap">เพิ่มหรือลบหมวดได้ รายการเก่าที่ใช้หมวดที่ลบไปยังอยู่ครบ</p>
    <div class="fg"><div><span class="lbl">รายจ่าย</span><div id="ceL" class="chips"></div><form id="ceF" class="bf" style="margin:0"><input id="ceI" class="field" maxlength="24" placeholder="เช่น ค่าน้ำมัน" aria-label="หมวดรายจ่ายใหม่"><button class="btn ghost" type="submit">เพิ่ม</button></form></div>
@@ -121,10 +123,13 @@ form{display:grid;gap:12px}
 <div class="two">
  <section class="panel">
   <h2>งบประมาณ</h2><p class="cap">ตั้งวงเงินรายจ่ายต่อเดือน</p>
-  <form id="bf" class="bf"><div><label class="lbl" for="bi">งบรายเดือน (บาท)</label><input id="bi" class="field" type="number" min="0" step="100" inputmode="decimal"></div><button class="btn" type="submit">บันทึกงบ</button></form>
+  <form id="bf" class="bf"><div><label class="lbl" for="bi">งบรายเดือน (บาท)</label><input id="bi" class="field" type="number" min="0" step="any" inputmode="decimal"></div><button class="btn" type="submit">บันทึกงบ</button></form>
   <div class="meta" style="margin-bottom:8px"><span id="bs">ใช้จ่าย ฿0.00</span><span id="bl">ยังไม่ตั้งงบ</span></div>
   <div class="track"><div id="bp" class="fill" style="background:var(--forest)"></div></div>
   <p id="bt" class="note" style="margin-top:10px"></p>
+  <h3 style="margin-top:18px">งบแยกตามหมวด</h3><p class="cap" style="margin-bottom:12px">เลือกหมวด แล้วกำหนดวงเงินต่อเดือน เช่น อาหาร ท่องเที่ยว (เว้นว่างหรือใส่ 0 เพื่อลบงบของหมวดนั้น)</p>
+  <form id="cbF" class="cbf"><div><label class="lbl" for="cbK">หมวดหมู่</label><select id="cbK" class="field"></select></div><div><label class="lbl" for="cbA">วงเงิน (บาท)</label><input id="cbA" class="field" type="number" min="0" step="any" inputmode="decimal"></div><button class="btn" type="submit">ตั้งงบหมวดนี้</button></form>
+  <div id="cbp" class="list" style="margin-top:14px"></div><button type="button" id="cbo" class="del" style="margin-top:12px;font-size:.82rem">เพิ่มหรือลบหมวดหมู่ →</button>
  </section>
  <section class="panel">
   <h2>สัดส่วนรายจ่าย</h2><p class="cap">แยกตามหมวดหมู่</p>
@@ -149,7 +154,7 @@ form{display:grid;gap:12px}
 <script>
 const KEY="budget-records",BKEY="monthly-budget-targets";
 const pal=["#315c4d","#d96c53","#bb7923","#7b6a9d","#5483a5","#8c9f63","#b0617b"];
-const defCats={expense:["อาหาร","เดินทาง","ที่อยู่อาศัย","บิลและบริการ","ช้อปปิ้ง","สุขภาพ","อื่น ๆ"],income:["เงินเดือน","รายได้เสริม","อื่น ๆ"]};
+const defCats={expense:["อาหาร","เดินทาง","ที่อยู่อาศัย","บิลและบริการ","ช้อปปิ้ง","สุขภาพ","ท่องเที่ยว","อื่น ๆ"],income:["เงินเดือน","รายได้เสริม","อื่น ๆ"]};
 let cats=(c=>c&&Array.isArray(c.expense)&&Array.isArray(c.income)&&c.expense.length&&c.income.length?c:JSON.parse(JSON.stringify(defCats)))(load("cats",null));
 const $=id=>document.getElementById(id);
 const thb=new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",minimumFractionDigits:2});
@@ -185,6 +190,11 @@ function render(){
   else if(r>=.8){bp.style.background="var(--warn)";$("bt").textContent="ใกล้ถึงงบแล้ว เหลือ "+thb.format(b-c.expense)}
   else $("bt").textContent="ยังเหลืองบ "+thb.format(b-c.expense)}
  if(b&&bm!==month)$("bt").textContent+=" (ใช้งบจากเดือนก่อน)";
+ const sp=Object.fromEntries(group(cur,"expense")),lims=cats.expense.filter(k=>Number(cb[k])>0);
+ $("cbp").replaceChildren(...(lims.length?lims.map(k=>{const lim=Number(cb[k]),u=sp[k]||0,w=document.createElement("div"),m=document.createElement("div"),n=document.createElement("span"),v=document.createElement("span"),t=document.createElement("div"),f=document.createElement("div");
+  w.className="row";w.style.marginBottom="0";m.className="meta";n.textContent=k;v.textContent=thb0.format(u)+" / "+thb0.format(lim);if(u>lim)v.style.color="var(--coral)";
+  t.className="track";f.className="fill";f.style.width=Math.min(u/lim*100,100)+"%";f.style.background=u>=lim?"var(--coral)":u>=lim*.8?"var(--warn)":"var(--forest)";
+  m.append(n,v);t.append(f);w.append(m,t);return w}):[emptyP("ยังไม่ได้ตั้งงบแยกหมวด")]));
  // donut
  const ex=group(cur,"expense"),tot=ex.reduce((s,x)=>s+x[1],0);
  $("dt").textContent=thb0.format(tot);$("cl").replaceChildren();
@@ -318,9 +328,9 @@ function chipList(el,type){el.replaceChildren(...cats[type].map(c=>{const s=docu
  b.onclick=()=>{cats[type]=cats[type].filter(x=>x!==c);if(!cats[type].length)cats[type]=["อื่น ๆ"];save("cats",cats);afterCats()};s.append(b);return s}))}
 function afterCats(){setCats();buildFc();renderSettings();render()}
 function renderSettings(){
- chipList($("ceL"),"expense");chipList($("ciL"),"income");
+ fillCbK();chipList($("ceL"),"expense");chipList($("ciL"),"income");
  $("cbL").replaceChildren(...cats.expense.map(c=>{const w=document.createElement("div"),l=document.createElement("label"),i=document.createElement("input");
-  l.className="lbl";l.textContent=c;i.className="field";i.type="number";i.min="0";i.step="100";i.inputMode="decimal";i.placeholder="ไม่จำกัด";i.value=cb[c]||"";
+  l.className="lbl";l.textContent=c;i.className="field";i.type="number";i.min="0";i.step="any";i.inputMode="decimal";i.placeholder="ไม่จำกัด";i.value=cb[c]||"";
   i.onchange=()=>{const v=Number(i.value);if(v>0)cb[c]=v;else delete cb[c];save("cat-budgets",cb);render()};w.append(l,i);return w}));
  const keep=$("rk").value;$("rk").replaceChildren(...cats[$("rt").value].map(c=>{const o=document.createElement("option");o.value=o.textContent=c;return o}));if(keep)$("rk").value=keep;
  $("rL").replaceChildren(...(rcr.length?rcr.map(x=>{const d=document.createElement("div"),t=document.createElement("div"),sd=document.createElement("div"),a=document.createElement("span"),b=document.createElement("button");
@@ -335,7 +345,11 @@ function initSettings(){
   rcr.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),type:$("rt").value,category:$("rk").value,amount:a,day,note:$("rn").value.trim().slice(0,80)});
   save("recurring",rcr);$("ra").value=$("rn").value="";genRecurring();renderSettings();render()};
  document.addEventListener("visibilitychange",()=>{if(!document.hidden){genRecurring();render()}});
+ $("cbo").onclick=()=>{$("setd").open=true;$("setd").scrollIntoView({behavior:"smooth",block:"start"})};
+ $("cbK").onchange=()=>{$("cbA").value=cb[$("cbK").value]||""};
+ $("cbF").onsubmit=e=>{e.preventDefault();const k=$("cbK").value,v=Number($("cbA").value);if(!k)return;if(v>0)cb[k]=v;else delete cb[k];save("cat-budgets",cb);renderSettings();render()};
  renderSettings()}
+function fillCbK(){const keep=$("cbK").value;$("cbK").replaceChildren(...cats.expense.map(c=>{const o=document.createElement("option");o.value=o.textContent=c;return o}));if(keep&&cats.expense.includes(keep))$("cbK").value=keep;$("cbA").value=cb[$("cbK").value]||""}
 </script>
 </body>
 </html>
