@@ -161,7 +161,8 @@ const thb=new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",minimum
 const thb0=new Intl.NumberFormat("th-TH",{style:"currency",currency:"THB",maximumFractionDigits:0});
 const dfmt=new Intl.DateTimeFormat("th-TH",{day:"numeric",month:"short",year:"numeric"});
 function load(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch{return d}}
-function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+let applying=false;
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}if(!applying&&(k==="cats"||k==="cat-budgets"||k==="recurring"))pushSettings()}
 let records=load(KEY,[]),budgets=load(BKEY,{}),month="",pending=null,editing=null,conf=load("sync-config",{}),queue=load("sync-queue",[]),flushing=false,cb=load("cat-budgets",{}),rcr=load("recurring",[]),rgen=load("rgen",[]);
 function today(){const n=new Date();return new Date(n-n.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
 function prevKey(k){const[y,m]=k.split("-").map(Number);const d=new Date(y,m-2,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
@@ -286,13 +287,14 @@ async function post(o){const res=await fetch(conf.url,{method:"POST",headers:{"C
  let d;try{d=await res.json()}catch{throw new Error("Apps Script ตอบกลับไม่ใช่ JSON (ตรวจว่า Deploy เวอร์ชันล่าสุด ตั้ง Anyone และเปิดจาก URL ที่ลงท้าย /exec)")}if(!d.ok)throw new Error(d.error||"ไม่ทราบสาเหตุ");return d}
 function op(o){if(!conf.url)return;queue.push(o);save("sync-queue",queue);flush()}
 async function flush(){if(flushing||!conf.url)return;flushing=true;
- try{while(queue.length){await post(queue[0]);queue.shift();save("sync-queue",queue)}syncSt("ซิงค์แล้ว")}
+ try{while(queue.length){await post(queue[0]).catch(e=>{if(queue[0].action==="settings"&&/unknown action/.test(e.message))return;throw e});queue.shift();save("sync-queue",queue)}syncSt("ซิงค์แล้ว")}
  catch(e){syncSt("ซิงค์ไม่สำเร็จ: "+e.message+" (ค้างอยู่ "+queue.length+" รายการ จะลองใหม่เมื่อกด “ซิงค์ตอนนี้”)",true)}
  finally{flushing=false}}
 async function pull(){if(!conf.url)return;syncSt("กำลังซิงค์…");await flush();if(queue.length)return;
  try{const d=await post({action:"list"});if(queue.length)return;
   records=(d.records||[]).map(clean).filter(Boolean);budgets={};
   Object.entries(d.budgets||{}).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&Number(v)>0)budgets[k]=Number(v)});
+  if(d.settings)applySettings(d.settings);else if(d.settings===null&&(localStorage.getItem("cats")||rcr.length||Object.keys(cb).length))pushSettings();
   save(KEY,records);save(BKEY,budgets);buildFc();render();syncSt("ซิงค์แล้ว มี "+records.length+" รายการ")}
  catch(e){syncSt("ดึงข้อมูลไม่สำเร็จ: "+e.message,true)}}
 function initSync(){
@@ -316,6 +318,14 @@ function initSync(){
  if(conf.url)pull();
 }
 
+function pushSettings(){if(!conf.url)return;queue=queue.filter((x,i)=>x.action!=="settings"||(i===0&&flushing));op({action:"settings",settings:{cats,cb,rcr}})}
+function applySettings(x){if(!x||typeof x!=="object")return;applying=true;
+ try{const ok=a=>Array.isArray(a)&&a.length&&a.every(v=>typeof v==="string");
+  if(x.cats&&ok(x.cats.expense)&&ok(x.cats.income)){cats={expense:x.cats.expense.map(v=>v.slice(0,24)),income:x.cats.income.map(v=>v.slice(0,24))};save("cats",cats)}
+  if(x.cb&&typeof x.cb==="object"){cb={};Object.entries(x.cb).forEach(([k,v])=>{if(Number(v)>0)cb[k]=Number(v)});save("cat-budgets",cb)}
+  if(Array.isArray(x.rcr)){rcr=x.rcr.filter(v=>v&&v.id&&["income","expense"].includes(v.type)&&Number(v.amount)>0&&v.day>=1&&v.day<=31).map(v=>({id:String(v.id),type:v.type,category:String(v.category||"อื่น ๆ").slice(0,40),amount:Number(v.amount),day:Math.floor(Number(v.day)),note:String(v.note||"").slice(0,80)}));save("recurring",rcr)}
+ }finally{applying=false}
+ setCats();buildFc();renderSettings()}
 function buildFc(){const set=new Set(["",...cats.expense,...cats.income,...records.map(x=>x.category)]),cur=$("fc").value;
  $("fc").replaceChildren(...[...set].map(c=>{const o=document.createElement("option");o.value=c;o.textContent=c||"ทุกหมวด";return o}));$("fc").value=cur}
 function genRecurring(){const n=new Date(),y=n.getFullYear(),m=n.getMonth(),last=new Date(y,m+1,0).getDate(),mk=y+"-"+String(m+1).padStart(2,"0");let ch=false;
